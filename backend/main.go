@@ -22,7 +22,7 @@ func pulsar(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// Set up a ticker that will push something in periodically
-	ft := time.NewTicker(1000 * time.Millisecond)
+	ft := time.NewTicker(2000 * time.Millisecond)
 	defer func() {
 		ft.Stop()
 	}()
@@ -30,7 +30,7 @@ func pulsar(w http.ResponseWriter, r *http.Request) {
 		select {
 		case <-ft.C:
 			t := fmt.Sprintf(time.Now().Format(time.RFC3339))
-			msg := "Tickles sent at " + t
+			msg := "Hamster attack at " + t
 			log.Println(msg)
 			err := conn.WriteMessage(websocket.TextMessage, []byte(msg))
 			if err != nil {
