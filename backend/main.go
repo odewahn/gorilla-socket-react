@@ -38,10 +38,35 @@ func pulsar(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
+}
 
+func goLong() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		// Upgrade the handler for websockets
+		conn, err := upgrader.Upgrade(w, r, nil)
+		if err != nil {
+			log.Println(err)
+			return
+		}
+		for {
+			_, p, err := conn.ReadMessage()
+			if err != nil {
+				return
+			}
+
+			log.Println("Starting long running operation", string(p))
+			time.Sleep(3 * time.Second)
+
+			msg := string(p) + " task is done"
+			log.Println(msg)
+			_ = conn.WriteMessage(websocket.TextMessage, []byte(msg))
+		}
+	}
 }
 
 func main() {
+
+	http.HandleFunc("/long", goLong())
 	http.HandleFunc("/pulsar", pulsar)
 	http.Handle("/", http.FileServer(http.Dir("./public")))
 	err := http.ListenAndServe(":3001", nil)
