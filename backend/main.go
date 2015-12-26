@@ -1,41 +1,19 @@
 package main
 
 import (
+	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
-	"time"
 
 	"github.com/boltdb/bolt"
-	"github.com/gorilla/websocket"
+	"github.com/gorilla/mux"
 )
-
-var upgrader = websocket.Upgrader{
-	ReadBufferSize:  1024,
-	WriteBufferSize: 1024,
-}
 
 func boltDB(db *bolt.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		// Upgrade the handler for websockets
-		conn, err := upgrader.Upgrade(w, r, nil)
-		if err != nil {
-			log.Println(err)
-			return
-		}
-		for {
-			_, p, err := conn.ReadMessage()
-			if err != nil {
-				return
-			}
-
-			//Add the DB operation here
-			log.Println("Got some data:", string(p))
-			time.Sleep(3 * time.Second)
-
-			msg := string(p) + " task is done"
-			log.Println(msg)
-			_ = conn.WriteMessage(websocket.TextMessage, []byte(msg))
-		}
+		body, _ := ioutil.ReadAll(r.Body)
+		fmt.Println(string(body))
 	}
 }
 
@@ -48,9 +26,14 @@ func main() {
 	}
 	defer db.Close()
 
-	http.HandleFunc("/db", boltDB(db))
+	r := mux.NewRouter()
+
+	r.Handle("/db", boltDB(db)).Methods("POST")
 	http.Handle("/", http.FileServer(http.Dir("./public")))
-	err = http.ListenAndServe(":3001", nil)
+
+	r.PathPrefix("/").Handler(http.FileServer(http.Dir("./public")))
+
+	err = http.ListenAndServe(":3001", r)
 	if err != nil {
 		panic("Error: " + err.Error())
 	}

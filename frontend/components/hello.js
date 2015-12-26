@@ -1,23 +1,15 @@
 var React = require('react')
+var $ = require('jquery'); //Use to load data from the DB
+
 
 module.exports = React.createClass({
   getInitialState: function() {
-    var serverSocket = new WebSocket("ws://localhost:3000/db")
     return {
-      serverSocket: serverSocket,
       Config: {
         Username: "",
         Password: ""
       }
     }
-  },
-  componentDidMount: function() {
-    var _this = this
-    // Write message on receive
-    this.state.serverSocket.onmessage = function(e) {
-      console.log("got  message back")
-      _this.setState({response: e.data})
-    };
   },
   setField: function(e) {
     var s = this.state.Config
@@ -30,7 +22,13 @@ module.exports = React.createClass({
       key: "LaunchbotCredentials",
       value: this.state.Config
     }
-    this.state.serverSocket.send(JSON.stringify(msg))
+    $.ajax({
+      type: "POST",
+      url: "/db",
+      data: JSON.stringify(msg),
+      datatype: "JSON"
+    })
+
   },
   render: function() {
     return (
