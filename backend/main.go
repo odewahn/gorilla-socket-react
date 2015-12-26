@@ -1,11 +1,11 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 	"time"
 
+	"github.com/boltdb/bolt"
 	"github.com/gorilla/websocket"
 )
 
@@ -14,33 +14,7 @@ var upgrader = websocket.Upgrader{
 	WriteBufferSize: 1024,
 }
 
-func pulsar(w http.ResponseWriter, r *http.Request) {
-	// Upgrade the handler for websockets
-	conn, err := upgrader.Upgrade(w, r, nil)
-	if err != nil {
-		log.Println(err)
-		return
-	}
-	// Set up a ticker that will push something in periodically
-	ft := time.NewTicker(2000 * time.Millisecond)
-	defer func() {
-		ft.Stop()
-	}()
-	for {
-		select {
-		case <-ft.C:
-			t := fmt.Sprintf(time.Now().Format(time.RFC3339))
-			msg := "Hamster attack at " + t
-			log.Println(msg)
-			err := conn.WriteMessage(websocket.TextMessage, []byte(msg))
-			if err != nil {
-				log.Println(err)
-			}
-		}
-	}
-}
-
-func goLong() http.HandlerFunc {
+func boltDB(db *bolt.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Upgrade the handler for websockets
 		conn, err := upgrader.Upgrade(w, r, nil)
@@ -54,7 +28,8 @@ func goLong() http.HandlerFunc {
 				return
 			}
 
-			log.Println("Starting long running operation", string(p))
+			//Add the DB operation here
+			log.Println("Got some data:", string(p))
 			time.Sleep(3 * time.Second)
 
 			msg := string(p) + " task is done"
@@ -66,10 +41,16 @@ func goLong() http.HandlerFunc {
 
 func main() {
 
-	http.HandleFunc("/long", goLong())
-	http.HandleFunc("/pulsar", pulsar)
+	// Set up the database
+	db, err := bolt.Open("/Users/odewahn/.launchbot/config.db", 0644, nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer db.Close()
+
+	http.HandleFunc("/db", boltDB(db))
 	http.Handle("/", http.FileServer(http.Dir("./public")))
-	err := http.ListenAndServe(":3001", nil)
+	err = http.ListenAndServe(":3001", nil)
 	if err != nil {
 		panic("Error: " + err.Error())
 	}
