@@ -6,8 +6,8 @@ module.exports = React.createClass({
   getInitialState: function() {
     return {
       Config: {
-        Username: "",
-        Password: ""
+        Username: "odewahn",
+        Password: "amoeba21"
       }
     }
   },
@@ -16,11 +16,13 @@ module.exports = React.createClass({
     s[e.target.name] = e.target.value
     this.setState({Config: s})
   },
-  saveValues: function() {
+  saveValues: function(bucket, key, e) {
+    console.log("The bucket is: ", bucket, key)
     console.log("Sending ", this.state.Config)
     var msg = {
-      key: "LaunchbotCredentials",
-      value: this.state.Config
+      Bucket: bucket,
+      Key: key,
+      Value: JSON.stringify(this.state.Config)
     }
     $.ajax({
       type: "POST",
@@ -34,11 +36,11 @@ module.exports = React.createClass({
     return (
       <div>
         <h1>Hello, World!</h1>
-        Username: <input type="text" name="Username" onChange={this.setField}/>
+        Username: <input type="text" defaultValue={this.state.Config.Username} name="Username" onChange={this.setField}/>
         <br/>
-        Password: <input type="text" name="Password" onChange={this.setField}/>
+        Password: <input type="text" defaultValue={this.state.Config.Password} name="Password" onChange={this.setField}/>
         <br/>
-        <button onClick={this.saveValues}>Do Something</button>
+        <button onClick={this.saveValues.bind(this, "Config", "CarinaCredentials")}>Do Something</button>
       </div>
     )
   }
